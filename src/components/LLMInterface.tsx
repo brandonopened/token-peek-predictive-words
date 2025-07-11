@@ -18,20 +18,61 @@ export function LLMInterface() {
   // Mock function to simulate OpenAI API with token probabilities
   const generateMockTokens = (text: string): Token[] => {
     const words = text.split(/(\s+)/);
+    
+    // Common alternative words that LLMs might consider
+    const alternativeMap: Record<string, string[]> = {
+      "When": ["As", "While", "Since"],
+      "teaching": ["instructing", "educating", "guiding"],
+      "preschoolers": ["children", "kids", "toddlers"],
+      "about": ["regarding", "concerning", "on"],
+      "classroom": ["learning", "educational", "school"],
+      "rules": ["guidelines", "expectations", "policies"],
+      "it's": ["it", "this", "that"],
+      "crucial": ["important", "essential", "vital"],
+      "to": ["for", "in", "that"],
+      "approach": ["handle", "address", "tackle"],
+      "the": ["this", "a", "an"],
+      "subject": ["topic", "matter", "issue"],
+      "in": ["with", "through", "via"],
+      "an": ["a", "the", "some"],
+      "engaging": ["interactive", "fun", "captivating"],
+      "and": ["or", "but", "while"],
+      "age-appropriate": ["suitable", "relevant", "fitting"],
+      "manner": ["way", "method", "approach"],
+      "benefits": ["advantages", "value", "importance"],
+      "of": ["from", "in", "with"],
+      "following": ["adhering", "obeying", "respecting"],
+      "include": ["encompass", "involve", "contain"],
+      "creating": ["building", "establishing", "forming"],
+      "a": ["the", "one", "some"],
+      "safe": ["secure", "protected", "comfortable"],
+      "learning": ["educational", "academic", "study"],
+      "environment": ["space", "setting", "atmosphere"],
+      "developing": ["building", "fostering", "enhancing"],
+      "social": ["interpersonal", "communication", "behavioral"],
+      "skills": ["abilities", "competencies", "capabilities"],
+      "fostering": ["promoting", "encouraging", "developing"],
+      "mutual": ["shared", "collective", "common"],
+      "respect": ["consideration", "understanding", "appreciation"]
+    };
+    
     return words.map(word => {
       if (word.trim() === "") {
         return { text: word, probability: 1.0 };
       }
       
+      const cleanWord = word.replace(/[.,!?;:]/, "");
       const probability = Math.random();
       const alternatives = [];
       
-      // Generate some mock alternatives
-      if (probability < 0.8) {
-        const altCount = Math.floor(Math.random() * 3) + 1;
-        for (let i = 0; i < altCount; i++) {
+      // Generate realistic alternatives if available
+      if (probability < 0.8 && alternativeMap[cleanWord]) {
+        const possibleAlts = alternativeMap[cleanWord];
+        const numAlts = Math.min(possibleAlts.length, Math.floor(Math.random() * 3) + 1);
+        
+        for (let i = 0; i < numAlts; i++) {
           alternatives.push({
-            text: word + "_alt" + (i + 1),
+            text: possibleAlts[i] + (word !== cleanWord ? word.substring(cleanWord.length) : ""),
             probability: Math.random() * 0.7
           });
         }
