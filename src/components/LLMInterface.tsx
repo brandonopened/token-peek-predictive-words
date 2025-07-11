@@ -227,15 +227,15 @@ export function LLMInterface() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-token-critical/20 border border-token-critical/30"></div>
-              <span className="text-sm">Critical (&lt;20%)</span>
+              <span className="text-sm">Strong (&lt;20%)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-token-low/20 border border-token-low/30"></div>
-              <span className="text-sm">Low (20-40%)</span>
+              <span className="text-sm">Fair (20-40%)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-token-medium/20 border border-token-medium/30"></div>
-              <span className="text-sm">Medium (40-60%)</span>
+              <span className="text-sm">Moderate (40-60%)</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-token-high/20 border border-token-high/30"></div>

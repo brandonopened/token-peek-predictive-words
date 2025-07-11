@@ -26,9 +26,9 @@ export function TokenDisplay({ tokens, className }: TokenDisplayProps) {
   const getProbabilityLabel = (probability: number) => {
     if (probability >= 0.8) return "excellent";
     if (probability >= 0.6) return "high";
-    if (probability >= 0.4) return "medium";
-    if (probability >= 0.2) return "low";
-    return "critical";
+    if (probability >= 0.4) return "moderate";
+    if (probability >= 0.2) return "fair";
+    return "strong";
   };
 
   return (
