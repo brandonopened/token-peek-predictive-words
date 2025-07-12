@@ -2,7 +2,8 @@
 
 A React-based web application that simulates and visualizes how Large Language Models (LLMs) work at the token level. This tool demonstrates the concept of token probability scoring and alternative token generation that occurs during text generation.
 
-![Uploading Screenshot 2025-07-12 at 10.26.16 AM.png…]()
+<img width="1284" height="1104" alt="Screenshot 2025-07-12 at 10 26 16 AM" src="https://github.com/user-attachments/assets/b051e59b-a291-499f-b042-170e0022a465" />
+
 
 
 ## What This Tool Does
