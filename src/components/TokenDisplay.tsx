@@ -11,9 +11,11 @@ interface TokenDisplayProps {
   tokens: Token[];
   className?: string;
   ollamaUrl?: string;
+  provider?: "ollama" | "openai";
+  openaiKey?: string;
 }
 
-export function TokenDisplay({ tokens, className, ollamaUrl = "http://localhost:11434" }: TokenDisplayProps) {
+export function TokenDisplay({ tokens, className, ollamaUrl = "http://localhost:11434", provider = "ollama", openaiKey }: TokenDisplayProps) {
   const [hoveredToken, setHoveredToken] = useState<number | null>(null);
   const [dynamicAlternatives, setDynamicAlternatives] = useState<Record<number, { text: string; probability: number }[]>>({});
   const [loadingAlternatives, setLoadingAlternatives] = useState<Record<number, boolean>>({});
@@ -43,28 +45,73 @@ export function TokenDisplay({ tokens, className, ollamaUrl = "http://localhost:
     setLoadingAlternatives(prev => ({ ...prev, [index]: true }));
     
     try {
-      const response = await fetch(`${ollamaUrl}/api/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'llama3.2:latest',
-          prompt: `Give me 3 alternative words or phrases that could replace "${cleanToken}" in context. Return only the alternatives, one per line, no explanations.`,
-          stream: false
-        }),
-      });
+      let response;
+      
+      if (provider === "ollama") {
+        response = await fetch(`${ollamaUrl}/api/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama3.2:latest',
+            prompt: `Give me 3 alternative words or phrases that could replace "${cleanToken}" in context. Return only the alternatives, one per line, no explanations.`,
+            stream: false
+          }),
+        });
+      } else {
+        // Call OpenAI API for alternatives
+        if (!openaiKey) {
+          console.log('OpenAI API key not available for alternatives');
+          setLoadingAlternatives(prev => ({ ...prev, [index]: false }));
+          return;
+        }
+        
+        response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              {
+                role: 'user',
+                content: `Give me 3 alternative words or phrases that could replace "${cleanToken}" in context. Return only the alternatives, one per line, no explanations.`
+              }
+            ],
+            max_tokens: 100,
+            temperature: 0.7
+          }),
+        });
+      }
       
       if (response.ok) {
         const data = await response.json();
-        const alternatives = data.response
-          .split('\n')
-          .filter((alt: string) => alt.trim().length > 0)
-          .slice(0, 3)
-          .map((alt: string) => ({
-            text: alt.trim().replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, ''),
-            probability: Math.random() * 0.7 + 0.1
-          }));
+        let alternatives;
+        
+        if (provider === "ollama") {
+          alternatives = data.response
+            .split('\n')
+            .filter((alt: string) => alt.trim().length > 0)
+            .slice(0, 3)
+            .map((alt: string) => ({
+              text: alt.trim().replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, ''),
+              probability: Math.random() * 0.7 + 0.1
+            }));
+        } else {
+          // OpenAI response format
+          const responseText = data.choices[0]?.message?.content || '';
+          alternatives = responseText
+            .split('\n')
+            .filter((alt: string) => alt.trim().length > 0)
+            .slice(0, 3)
+            .map((alt: string) => ({
+              text: alt.trim().replace(/^["']|["']$/g, '').replace(/^\d+\.\s*/, ''),
+              probability: Math.random() * 0.7 + 0.1
+            }));
+        }
         
         setDynamicAlternatives(prev => ({ ...prev, [index]: alternatives }));
       }

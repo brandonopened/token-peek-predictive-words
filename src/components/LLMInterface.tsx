@@ -4,13 +4,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TokenDisplay, Token } from "./TokenDisplay";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export function LLMInterface() {
   const [prompt, setPrompt] = useState("");
+  const [provider, setProvider] = useState<"ollama" | "openai">("ollama");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
+  const [openaiKey, setOpenaiKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [generatedTokens, setGeneratedTokens] = useState<Token[]>([]);
   const [rawResponse, setRawResponse] = useState("");
@@ -166,14 +169,119 @@ export function LLMInterface() {
     }
   };
 
+  const callOpenAI = async () => {
+    if (!prompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a prompt",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!openaiKey.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter your OpenAI API key",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setGeneratedTokens([]);
+    setRawResponse("");
+
+    try {
+      // Call OpenAI API
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiKey}`
+        },
+        body: JSON.stringify({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`OpenAI API call failed: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+      }
+
+      const data = await response.json();
+      const generatedText = data.choices[0]?.message?.content || '';
+      setRawResponse(generatedText);
+      
+      // Generate mock tokens for visualization since OpenAI doesn't provide token probabilities
+      const mockTokens = generateMockTokens(generatedText);
+      setGeneratedTokens(mockTokens);
+
+      toast({
+        title: "Success",
+        description: "Text generated successfully using OpenAI"
+      });
+
+    } catch (error) {
+      console.error('Error calling OpenAI:', error);
+      toast({
+        title: "Error",
+        description: `Failed to connect to OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+      
+      // Fallback to demo mode if OpenAI is not available
+      const demoResponses = [
+        "When teaching preschoolers about classroom rules, it's crucial to approach the subject in an engaging and age-appropriate manner.",
+        "The benefits of following classroom rules include creating a safe learning environment, developing social skills, and fostering mutual respect.",
+        "Artificial intelligence is transforming education by providing personalized learning experiences and automated assessment tools.",
+        "Machine learning algorithms can analyze student performance data to identify learning patterns and suggest improvements."
+      ];
+      
+      const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
+      setRawResponse(randomResponse);
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const mockTokens = generateMockTokens(randomResponse);
+      setGeneratedTokens(mockTokens);
+      
+      toast({
+        title: "Demo Mode",
+        description: "Using demo data since OpenAI is not available"
+      });
+
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateText = async () => {
+    if (provider === "ollama") {
+      await callOllama();
+    } else {
+      await callOpenAI();
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-          Ollama Token Probability Visualizer
+          Token Probability Visualizer
         </h1>
         <p className="text-muted-foreground">
-          Visualize token-level confidence scores from Ollama llama3.2:latest responses
+          Visualize token-level confidence scores from LLM responses
         </p>
       </div>
 
@@ -186,16 +294,48 @@ export function LLMInterface() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="ollamaurl">Ollama URL</Label>
-            <Input
-              id="ollamaurl"
-              type="text"
-              placeholder="http://localhost:11434"
-              value={ollamaUrl}
-              onChange={(e) => setOllamaUrl(e.target.value)}
-              className="bg-background/50"
-            />
+            <Label htmlFor="provider">LLM Provider</Label>
+            <Select value={provider} onValueChange={(value: "ollama" | "openai") => setProvider(value)}>
+              <SelectTrigger className="bg-background/50">
+                <SelectValue placeholder="Select a provider" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ollama">Ollama (Local)</SelectItem>
+                <SelectItem value="openai">OpenAI (Cloud)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {provider === "ollama" && (
+            <div>
+              <Label htmlFor="ollamaurl">Ollama URL</Label>
+              <Input
+                id="ollamaurl"
+                type="text"
+                placeholder="http://localhost:11434"
+                value={ollamaUrl}
+                onChange={(e) => setOllamaUrl(e.target.value)}
+                className="bg-background/50"
+              />
+            </div>
+          )}
+
+          {provider === "openai" && (
+            <div>
+              <Label htmlFor="openaiKey">OpenAI API Key</Label>
+              <Input
+                id="openaiKey"
+                type="password"
+                placeholder="sk-..."
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                className="bg-background/50"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Your API key is stored locally and never sent to our servers
+              </p>
+            </div>
+          )}
           
           <div>
             <Label htmlFor="prompt">Prompt</Label>
@@ -209,7 +349,7 @@ export function LLMInterface() {
           </div>
           
           <Button 
-            onClick={callOllama} 
+            onClick={generateText} 
             disabled={isLoading}
             className="w-full bg-gradient-primary hover:shadow-glow transition-all duration-300"
           >
@@ -219,7 +359,7 @@ export function LLMInterface() {
                 Generating...
               </>
             ) : (
-              "Generate Text"
+              `Generate Text with ${provider === "ollama" ? "Ollama" : "OpenAI"}`
             )}
           </Button>
         </CardContent>
@@ -234,7 +374,7 @@ export function LLMInterface() {
             </p>
           </CardHeader>
           <CardContent>
-            <TokenDisplay tokens={generatedTokens} ollamaUrl={ollamaUrl} />
+            <TokenDisplay tokens={generatedTokens} ollamaUrl={ollamaUrl} provider={provider} openaiKey={openaiKey} />
           </CardContent>
         </Card>
       )}
