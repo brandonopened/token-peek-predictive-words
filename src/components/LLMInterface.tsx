@@ -275,15 +275,7 @@ export function LLMInterface() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-          Token Probability Visualizer
-        </h1>
-        <p className="text-muted-foreground">
-          Visualize token-level confidence scores from LLM responses
-        </p>
-      </div>
+    <div className="space-y-6">
 
       <Card className="bg-gradient-card shadow-card border-border">
         <CardHeader>
