@@ -11,7 +11,7 @@ import { toast } from "@/hooks/use-toast";
 
 export function LLMInterface() {
   const [prompt, setPrompt] = useState("");
-  const [provider, setProvider] = useState<"ollama" | "openai">("ollama");
+  const [provider, setProvider] = useState<"ollama" | "openai">("openai");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434");
   const [openaiKey, setOpenaiKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
